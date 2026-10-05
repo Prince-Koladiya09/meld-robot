@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pip: emotion-aware robot demo</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --fg:#1b1f24; --mute:#6b7280; --line:#e3e6ea; --acc:#4f46e5; --bar:#c7d2fe; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#111418; --card:#1a1e24; --fg:#e8eaed; --mute:#98a1ad; --line:#2a3039; --acc:#818cf8; --bar:#3b3f66; } }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--fg); }
+  main { max-width: 880px; margin: 0 auto; padding: 20px 16px 48px; }
+  h1 { font-size: 20px; margin: 0 0 4px; } .sub { color: var(--mute); margin-bottom: 16px; }
+  .grid { display:grid; gap:14px; grid-template-columns: 1fr 1fr; } @media (max-width:720px){ .grid{grid-template-columns:1fr;} }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+  .card h2 { font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--mute); margin:0 0 10px; font-weight:600; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  button { font:inherit; padding:8px 14px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--fg); cursor:pointer; }
+  button.primary { background:var(--acc); border-color:var(--acc); color:#fff; } button:disabled { opacity:.5; cursor:default; }
+  .badge { padding:2px 10px; border-radius:99px; font-size:12px; border:1px solid var(--line); color:var(--mute); }
+  .badge.listening { color:#059669; border-color:#059669; } .badge.thinking { color:#d97706; border-color:#d97706; } .badge.responding { color:var(--acc); border-color:var(--acc); }
+  .bar { display:grid; grid-template-columns: 76px 1fr 44px; gap:8px; align-items:center; margin:4px 0; font-size:13px; }
+  .track { height:10px; background:var(--line); border-radius:6px; overflow:hidden; } .fill { height:100%; width:0; background:var(--bar); transition:width .2s; }
+  .fill.top { background:var(--acc); }
+  .text { min-height:44px; font-size:17px; } .partial { color:var(--mute); } .reply { font-size:17px; min-height:52px; }
+  .chip { display:inline-block; padding:2px 9px; margin:2px 4px 2px 0; border-radius:99px; background:var(--line); font-size:12px; }
+  .warn { color:#d97706; font-weight:600; } code { font-size:12px; color:var(--mute); }
+  .gate { display:flex; height:12px; border-radius:6px; overflow:hidden; background:var(--line); } .gate div { transition:width .2s; }
+  #gT { background:#0ea5e9; width:50%; } #gA { background:#f59e0b; width:50%; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Pip, the emotion-aware robot</h1>
+  <div class="sub">Speak, or replay a clip. The words (text) and the voice (audio) are fused into an emotion state, and Pip replies accordingly. Everything runs locally.</div>
+
+  <div class="card" style="margin-bottom:14px">
+    <div class="row">
+      <button id="mic" class="primary">Start microphone</button>
+      <label><button id="fileBtn" type="button">Replay audio file…</button><input id="file" type="file" accept="audio/*,video/mp4" hidden></label>
+      <button id="reset">Reset memory</button>
+      <span id="turn" class="badge">disconnected</span>
+      <code id="lat"></code>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card"><h2>You said</h2>
+      <div id="said" class="text partial">…</div>
+      <div id="pros" style="margin-top:6px"></div>
+      <div id="mm"></div>
+    </div>
+    <div class="card"><h2>Pip says</h2><div id="reply" class="reply"></div></div>
+    <div class="card"><h2>Emotion (fused, live)</h2><div id="bars"></div></div>
+    <div class="card"><h2>Which signal drove it</h2>
+      <div class="gate"><div id="gT"></div><div id="gA"></div></div>
+      <div class="row" style="justify-content:space-between;font-size:12px;color:var(--mute);margin-top:4px"><span>text (words)</span><span>audio (voice)</span></div>
+      <h2 style="margin-top:16px">Final state (JSON)</h2><pre id="json" style="margin:0;font-size:12px;overflow:auto;max-height:200px"></pre>
+    </div>
+  </div>
+</main>
+
+<script>
+const EMO = ["anger","disgust","fear","joy","neutral","sadness","surprise"];
+const $ = id => document.getElementById(id);
+$("bars").innerHTML = EMO.map(e => `<div class="bar"><span>${e}</span><div class="track"><div class="fill" id="f_${e}"></div></div><span id="p_${e}">0%</span></div>`).join("");
+
+let ws, ctx, node, stream, replaying = false;
+const wsUrl = (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/stream";
+
+function connect() {
+  ws = new WebSocket(wsUrl); ws.binaryType = "arraybuffer";
+  ws.onopen = () => setTurn("idle");
+  ws.onclose = () => setTurn("disconnected");
+  ws.onmessage = ev => handle(JSON.parse(ev.data));
+}
+function setTurn(t) { const b = $("turn"); b.textContent = t; b.className = "badge " + t; }
+function showProbs(p) {
+  const top = Object.keys(p).reduce((a, b) => p[a] > p[b] ? a : b);
+  EMO.forEach(e => { $("f_" + e).style.width = (100 * (p[e] || 0)) + "%"; $("f_" + e).className = "fill" + (e === top ? " top" : ""); $("p_" + e).textContent = Math.round(100 * (p[e] || 0)) + "%"; });
+}
+function showGate(w) { $("gT").style.width = (100 * w.text) + "%"; $("gA").style.width = (100 * w.audio) + "%"; }
+
+function handle(e) {
+  if (e.type === "turn") { setTurn(e.turn); if (e.turn === "listening") { $("reply").textContent = ""; $("said").className = "text partial"; $("mm").textContent = ""; } }
+  else if (e.type === "state_update") { $("said").textContent = e.partial_text || "…"; showProbs(e.emotion.probs); showGate(e.modality_weight); }
+  else if (e.type === "state_final") {
+    if (e.no_speech) return;
+    $("said").textContent = e.text; $("said").className = "text";
+    showProbs(e.emotion.probs); showGate(e.modality_weight);
+    const p = e.prosody || {};
+    $("pros").innerHTML = ["pitch","pitch_var","energy","rate","pauses"].filter(k => p[k] && p[k] !== "unknown").map(k => `<span class="chip">${k.replace("_"," ")}: ${p[k]}</span>`).join("");
+    $("mm").innerHTML = e.mismatch ? `<span class="warn">Words sound ${e.text_emotion}, voice says ${e.emotion.label}</span>` : "";
+    const slim = {...e}; delete slim.type; delete slim.prosody_summary; delete slim.prosody; delete slim.emotion.probs;
+    $("json").textContent = JSON.stringify(slim, null, 2);
+  }
+  else if (e.type === "reply_token") $("reply").textContent += e.token;
+  else if (e.type === "reply_done") $("lat").textContent = "first token " + e.latency_ms.first_token + " ms";
+  else if (e.type === "barge_in") $("reply").textContent += " …";
+}
+
+// ---- microphone: AudioWorklet resamples to 16 kHz int16, 20 ms frames
+const worklet = `
+class P extends AudioWorkletProcessor {
+  constructor(){ super(); this.r = sampleRate/16000; this.pos = 0; this.buf = []; }
+  process(inputs){
+    const ch = inputs[0][0]; if (!ch) return true;
+    let i = this.pos;
+    for (; i < ch.length; i += this.r){ const i0 = Math.floor(i), i1 = Math.min(i0+1, ch.length-1), f = i-i0; this.buf.push(ch[i0]*(1-f)+ch[i1]*f); }
+    this.pos = i - ch.length;
+    while (this.buf.length >= 320){ const a = new Int16Array(320); for (let k=0;k<320;k++){ a[k] = Math.max(-1, Math.min(1, this.buf[k]))*32767; } this.buf.splice(0,320); this.port.postMessage(a.buffer, [a.buffer]); }
+    return true;
+  }
+}
+registerProcessor("pcm16k", P);`;
+
+async function startMic() {
+  if (!ws || ws.readyState > 1) connect();
+  stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: false, channelCount: 1 } });
+  ctx = new AudioContext();
+  await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([worklet], { type: "application/javascript" })));
+  node = new AudioWorkletNode(ctx, "pcm16k");
+  node.port.onmessage = m => { if (ws.readyState === 1) ws.send(m.data); };
+  ctx.createMediaStreamSource(stream).connect(node);
+  $("mic").textContent = "Stop microphone"; $("mic").classList.remove("primary");
+}
+function stopMic() { stream.getTracks().forEach(t => t.stop()); ctx.close(); $("mic").textContent = "Start microphone"; $("mic").classList.add("primary"); node = null; }
+$("mic").onclick = () => node ? stopMic() : startMic().catch(err => alert("Microphone error: " + err.message));
+$("reset").onclick = () => ws && ws.readyState === 1 && ws.send(JSON.stringify({ type: "reset" }));
+
+// ---- replay a file in real time (decoded and resampled in the browser)
+$("fileBtn").onclick = () => $("file").click();
+$("file").onchange = async ev => {
+  const f = ev.target.files[0]; if (!f) return;
+  if (!ws || ws.readyState > 1) { connect(); await new Promise(r => ws.addEventListener("open", r, { once: true })); }
+  const buf = await new AudioContext().decodeAudioData(await f.arrayBuffer());
+  const off = new OfflineAudioContext(1, Math.ceil(buf.duration * 16000), 16000);
+  const src = off.createBufferSource(); src.buffer = buf; src.connect(off.destination); src.start();
+  const mono = (await off.startRendering()).getChannelData(0);
+  const pcm = new Int16Array(mono.length + 16000 * 2);          // + 2 s trailing silence so the turn ends
+  for (let i = 0; i < mono.length; i++) pcm[i] = Math.max(-1, Math.min(1, mono[i])) * 32767;
+  for (let i = 0; i < pcm.length; i += 320) { ws.send(pcm.slice(i, i + 320).buffer); await new Promise(r => setTimeout(r, 20)); }
+  ev.target.value = "";
+};
+connect();
+</script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+# Runtime configuration for the streaming server / demo
+sample_rate: 16000
+frame_ms: 20                      # client frame size
+checkpoint: checkpoints/fusion/best.pt
+
+vad:
+  backend: silero                 # silero | energy (energy needs no model download)
+  threshold: 0.5
+  energy_threshold_db: -45.0      # only used by the energy backend
+
+turn:
+  min_speech_ms: 300              # shorter bursts are treated as false triggers
+  endpoint_silence_ms: 500        # silence that ends a turn
+  pre_roll_ms: 300                # audio kept from before speech start
+  max_utterance_s: 20.0
+
+streaming:
+  emotion_hop_ms: 250             # how often a state_update is produced while speaking
+  asr_hop_ms: 750                 # how often the partial transcript is refreshed
+  window_s: 6.0                   # rolling audio window fed to the emotion model
+  ema_alpha: 0.5                  # smoothing (higher = more reactive)
+  switch_margin: 0.10             # hysteresis: new label must beat current by this margin
+
+asr:
+  model: small.en                 # base.en is a lighter fallback
+  device: auto                    # auto | cuda | cpu
+  compute_type: auto              # auto | float16 | int8_float16 | int8
+  beam_size: 1
+
+llm:
+  backend: transformers           # transformers | template (no LLM, rule-based replies)
+  model: Qwen/Qwen2.5-1.5B-Instruct
+  device: auto
+  quantization: none              # none | 4bit | 8bit (bitsandbytes, CUDA only)
+  max_new_tokens: 60
+  temperature: 0.7
+  top_p: 0.9
+
+persona:
+  name: Pip
+  history_turns: 3
+
+server:
+  host: 127.0.0.1
+  port: 8000
+  log_dir: logs/sessions

@@ -1,0 +1,35 @@
+seed: 42
+data:
+  manifest_dir: data/processed
+  max_text_len: 128
+  max_audio_seconds: 6.0
+  num_workers: 2
+  audio_augment: true             # light noise / gain / speed in training only
+model:
+  text_name: roberta-base
+  audio_name: microsoft/wavlm-base-plus
+  hidden: 256
+  heads: 4
+  dropout: 0.2
+  aux_weight: 0.3                 # weight on per-modality auxiliary losses (fusion stage)
+  sentiment_weight: 0.3           # weight on the 3-way sentiment auxiliary task
+train:
+  batch_size: 16
+  grad_accum: 2
+  epochs: 6
+  lr_encoder: 2.0e-5
+  lr_head: 5.0e-4
+  weight_decay: 0.01
+  warmup_ratio: 0.1
+  max_grad_norm: 1.0
+  label_smoothing: 0.05
+  class_weight_power: 0.5         # weights = (1/freq)^power, normalised; 0 disables
+  amp: true                       # bf16/fp16 autocast on CUDA
+  freeze_audio_cnn: true          # WavLM conv feature encoder stays frozen
+  freeze_audio_layers: 6          # freeze the lowest N WavLM transformer layers
+  freeze_encoders_epochs: 1       # fusion stage: train heads only for the first N epochs
+  init_text_ckpt: checkpoints/text/best.pt     # used by fusion stage if present
+  init_audio_ckpt: checkpoints/audio/best.pt   # used by fusion stage if present
+out:
+  ckpt_dir: checkpoints
+  results_dir: results

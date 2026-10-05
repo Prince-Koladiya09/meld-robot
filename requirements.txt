@@ -1,0 +1,28 @@
+# Core ML
+torch>=2.2
+transformers>=4.44,<5
+numpy>=1.24
+pandas>=2.0
+scikit-learn>=1.3
+PyYAML>=6.0
+tqdm>=4.66
+
+# Audio
+soundfile>=0.12
+librosa>=0.10
+faster-whisper>=1.0.3      # streaming-capable ASR (CTranslate2)
+silero-vad>=5.1            # voice activity detection (torch)
+
+# LLM quantization (optional, GPU only; skip on CPU / Apple Silicon)
+# bitsandbytes>=0.43
+accelerate>=0.30
+
+# Serving
+fastapi>=0.110
+uvicorn[standard]>=0.29
+websockets>=12.0
+
+# Dev
+pytest>=8.0
+pytest-asyncio>=0.23
+httpx>=0.27

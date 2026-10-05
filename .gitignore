@@ -1,0 +1,61 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Data (MELD is large and has its own license; never commit it)
+data/*
+!data/.gitkeep
+*.mp4
+*.wav
+*.tar.gz
+
+# Model artifacts
+checkpoints/*
+!checkpoints/.gitkeep
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.onnx
+*.gguf
+runs/
+wandb/
+lightning_logs/
+
+# Hugging Face / torch caches
+.cache/
+hf_cache/
+
+# Results: keep the folder, ignore bulky raw outputs (small metrics JSON/MD are fine to commit)
+results/*
+!results/.gitkeep
+!results/*.json
+!results/*.md
+!results/*.csv
+results/**/*.npy
+
+# Logs & session traces
+logs/
+*.log
+sessions/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Secrets
+.env
+*.key

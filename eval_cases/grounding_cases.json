@@ -1,0 +1,100 @@
+[
+ {
+  "text": "No, it's fine.",
+  "emotion": "neutral",
+  "text_emotion": "neutral",
+  "prosody_summary": "pitch mid, pitch movement normal, energy mid, speaking rate normal",
+  "mismatch": false
+ },
+ {
+  "text": "No, it's fine.",
+  "emotion": "anger",
+  "text_emotion": "neutral",
+  "prosody_summary": "pitch low, pitch movement flat, energy high, speaking rate fast",
+  "mismatch": true
+ },
+ {
+  "text": "No, it's fine.",
+  "emotion": "sadness",
+  "text_emotion": "neutral",
+  "prosody_summary": "pitch low, pitch movement flat, energy low, speaking rate slow",
+  "mismatch": true
+ },
+ {
+  "text": "Great, just great.",
+  "emotion": "joy",
+  "text_emotion": "joy",
+  "prosody_summary": "pitch high, pitch movement expressive, energy high, speaking rate fast",
+  "mismatch": false
+ },
+ {
+  "text": "Great, just great.",
+  "emotion": "anger",
+  "text_emotion": "joy",
+  "prosody_summary": "pitch low, pitch movement flat, energy high, speaking rate fast",
+  "mismatch": true
+ },
+ {
+  "text": "Oh, really?",
+  "emotion": "surprise",
+  "text_emotion": "surprise",
+  "prosody_summary": "pitch high, pitch movement expressive, energy high",
+  "mismatch": false
+ },
+ {
+  "text": "Oh, really?",
+  "emotion": "disgust",
+  "text_emotion": "surprise",
+  "prosody_summary": "pitch low, pitch movement flat, energy mid, speaking rate slow",
+  "mismatch": true
+ },
+ {
+  "text": "I got the job!",
+  "emotion": "joy",
+  "text_emotion": "joy",
+  "prosody_summary": "pitch high, pitch movement expressive, energy high, speaking rate fast",
+  "mismatch": false
+ },
+ {
+  "text": "I don't think I can do this anymore.",
+  "emotion": "sadness",
+  "text_emotion": "sadness",
+  "prosody_summary": "pitch low, energy low, speaking rate slow, pauses many",
+  "mismatch": false
+ },
+ {
+  "text": "Did you hear that noise downstairs?",
+  "emotion": "fear",
+  "text_emotion": "fear",
+  "prosody_summary": "pitch high, energy low, speaking rate fast",
+  "mismatch": false
+ },
+ {
+  "text": "You never listen to me!",
+  "emotion": "anger",
+  "text_emotion": "anger",
+  "prosody_summary": "pitch high, energy high, speaking rate fast",
+  "mismatch": false
+ },
+ {
+  "text": "What time is the meeting tomorrow?",
+  "emotion": "neutral",
+  "text_emotion": "neutral",
+  "prosody_summary": "pitch mid, energy mid, speaking rate normal",
+  "mismatch": false
+ },
+ {
+  "text": "That milk smells terrible.",
+  "emotion": "disgust",
+  "text_emotion": "disgust",
+  "prosody_summary": "pitch low, energy mid, pitch movement flat",
+  "mismatch": false
+ },
+ {
+  "text": "You're getting married?!",
+  "emotion": "surprise",
+  "text_emotion": "surprise",
+  "prosody_summary": "pitch high, pitch movement expressive, energy high",
+  "mismatch": false
+ }
+]

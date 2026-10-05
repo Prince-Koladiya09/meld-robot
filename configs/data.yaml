@@ -1,0 +1,5 @@
+meld_root: data/MELD.Raw          # where download_meld.sh extracts the archive
+out_dir: data/processed           # jsonl manifests + extracted 16 kHz wavs
+sample_rate: 16000
+context_turns: 2                  # previous utterances (same dialogue) used as text context
+max_audio_seconds: 6.0            # clips are truncated to this length in training
